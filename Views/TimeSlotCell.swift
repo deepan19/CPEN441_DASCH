@@ -1,3 +1,10 @@
+//
+//  TimeSlotCell.swift
+//  ubc_room_booking
+//
+//  Created by Deepan Chakravarthy on 2025-03-19.
+//
+
 import SwiftUI
 
 struct TimeSlotCell: View {

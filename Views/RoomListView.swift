@@ -88,19 +88,57 @@ struct RoomListView: View {
             // Room list
             List(filteredRooms, id: \.id) { room in
                 NavigationLink(destination: RoomDetailView(room: room)) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(room.name)
-                            .font(.headline)
+                    HStack(spacing: 12) {
+                        // Room thumbnail image
+                        Image(room.imageName)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 80, height: 60)
+                            .cornerRadius(6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
+                            )
                         
-                        Text(room.location)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        // Amenities icons
-                        HStack {
-                            ForEach(room.amenities) { amenity in
-                                Image(systemName: amenity.iconName)
-                                    .foregroundColor(.blue)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(room.name)
+                                .font(.headline)
+                            
+                            Text(room.location)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            // Amenities icons
+                            HStack(spacing: 8) {
+                                // Capacity indicator
+                                HStack(spacing: 2) {
+                                    Image(systemName: "person.2.fill")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    
+                                    Text("\(room.capacity)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                // Divider
+                                Text("•")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                // Amenity icons
+                                ForEach(room.amenities.prefix(3)) { amenity in
+                                    Image(systemName: amenity.iconName)
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                                
+                                // Show +X more if there are more amenities
+                                if room.amenities.count > 3 {
+                                    Text("+\(room.amenities.count - 3)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
                     }

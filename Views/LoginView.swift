@@ -17,7 +17,7 @@ struct LoginView: View {
             VStack(spacing: 20) {
                 Spacer()
                 
-                Text("University Room Booking")
+                Text("UBC DASCH")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 

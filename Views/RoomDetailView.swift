@@ -1,3 +1,10 @@
+//
+//  RoomDetailView.swift
+//  ubc_room_booking
+//
+//  Created by Deepan Chakravarthy on 2025-03-19.
+//
+
 import SwiftUI
 
 struct RoomDetailView: View {
@@ -54,6 +61,37 @@ struct RoomDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                // Room image
+                ZStack(alignment: .bottomLeading) {
+                    // Room image with proper sizing
+                    Image(room.imageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 200)
+                        .clipped()
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
+                    
+                    // Capacity badge
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.2.fill")
+                            .font(.caption)
+                        
+                        Text("\(room.capacity)")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.9))
+                    .cornerRadius(15)
+                    .padding(12)
+                }
+                .padding(.horizontal)
+                
                 // Room details
                 VStack(alignment: .leading, spacing: 10) {
                     Text(room.name)
@@ -63,9 +101,6 @@ struct RoomDetailView: View {
                     Text(room.location)
                         .font(.headline)
                         .foregroundColor(.secondary)
-                    
-                    Text("Capacity: \(room.capacity) people")
-                        .font(.subheadline)
                     
                     // Amenities
                     Text("Amenities")
@@ -110,7 +145,6 @@ struct RoomDetailView: View {
                         
                         Spacer()
                         
-                        // Updated message to indicate non-consecutive selection is allowed
                         Text("Select any available time slots")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -125,7 +159,7 @@ struct RoomDetailView: View {
                     } else {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], spacing: 10) {
                             ForEach(timeSlots) { slot in
-                                // Use the updated TimeSlotCell component
+                                // Use the TimeSlotCell component
                                 TimeSlotCell(
                                     slot: slot,
                                     isSelected: selectedTimeSlots.contains(slot.id),
