@@ -8,10 +8,10 @@
 import SwiftUI
 
 @main
-struct ubc_room_bookingApp: App {
+struct UniversityRoomBookingApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            LoginView()
         }
     }
 }

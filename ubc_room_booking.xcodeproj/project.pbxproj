@@ -16,6 +16,16 @@
 			path = ubc_room_booking;
 			sourceTree = "<group>";
 		};
+		4FDEF2012D8B227F008B610C /* Models */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Models;
+			sourceTree = "<group>";
+		};
+		4FDEF2032D8B228E008B610C /* Views */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Views;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,6 +44,8 @@
 			children = (
 				4FCCFC612D8A8BF200A292FE /* ubc_room_booking */,
 				4FCCFC602D8A8BF200A292FE /* Products */,
+				4FDEF2012D8B227F008B610C /* Models */,
+				4FDEF2032D8B228E008B610C /* Views */,
 			);
 			sourceTree = "<group>";
 		};
@@ -62,6 +74,8 @@
 			);
 			fileSystemSynchronizedGroups = (
 				4FCCFC612D8A8BF200A292FE /* ubc_room_booking */,
+				4FDEF2012D8B227F008B610C /* Models */,
+				4FDEF2032D8B228E008B610C /* Views */,
 			);
 			name = ubc_room_booking;
 			packageProductDependencies = (
