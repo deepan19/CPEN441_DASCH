@@ -13,38 +13,14 @@ struct RoomDetailView: View {
     @State private var selectedTimeSlots: Set<UUID> = []  // Track multiple selected slots by ID
     @State private var showingBookingConfirmation = false
     @State private var bookingSuccess = false
+    @State private var refreshToggle = false  // Add a toggle to force refresh
     
     // Get time slots from DataStore with controlled availability
     var timeSlots: [TimeSlot] {
-        let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: selectedDate)
+        // This is just to force SwiftUI to recalculate when refreshToggle changes
+        let _ = refreshToggle
         
-        var slots: [TimeSlot] = []
-        let openingHour = 8 // 8 AM
-        let closingHour = 22 // 10 PM
-        
-        for hour in openingHour..<closingHour {
-            let startTime = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: startOfDay)!
-            let endTime = calendar.date(bySettingHour: hour + 1, minute: 0, second: 0, of: startOfDay)!
-            
-            // Make every third slot unavailable for demo purposes
-            let isAvailable = (hour % 3 != 0)
-            
-            // Also check if there's an existing booking in DataStore
-            let isBooked = DataStore.shared.bookings.contains { booking in
-                booking.roomId == room.id &&
-                calendar.isDate(booking.date, inSameDayAs: selectedDate) &&
-                calendar.isDate(booking.startTime, inSameDayAs: startTime)
-            }
-            
-            slots.append(TimeSlot(
-                startTime: startTime,
-                endTime: endTime,
-                isAvailable: isAvailable && !isBooked
-            ))
-        }
-        
-        return slots
+        return DataStore.shared.getTimeSlots(for: selectedDate, roomId: room.id)
     }
     
     // Get only the selected time slots
@@ -151,7 +127,8 @@ struct RoomDetailView: View {
                     }
                     .padding(.horizontal)
                     
-                    if timeSlots.filter({ $0.isAvailable }).isEmpty {
+                    let availableSlots = timeSlots.filter({ $0.isAvailable })
+                    if availableSlots.isEmpty {
                         Text("No time slots available for this date")
                             .foregroundColor(.secondary)
                             .padding()
@@ -203,6 +180,12 @@ struct RoomDetailView: View {
                             timeSlot: slot
                         )
                     }
+                    
+                    // Clear selected slots after booking
+                    selectedTimeSlots.removeAll()
+                    
+                    // Toggle refresh to update the UI
+                    refreshToggle.toggle()
                     
                     bookingSuccess = true
                 }
