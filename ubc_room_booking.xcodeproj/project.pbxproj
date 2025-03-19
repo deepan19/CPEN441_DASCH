@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4FDEF21F2D8B53C8008B610C /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 4FDEF21E2D8B53C4008B610C /* README.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		4FCCFC5F2D8A8BF200A292FE /* ubc_room_booking.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ubc_room_booking.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4FDEF21E2D8B53C4008B610C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -46,6 +51,7 @@
 				4FCCFC602D8A8BF200A292FE /* Products */,
 				4FDEF2012D8B227F008B610C /* Models */,
 				4FDEF2032D8B228E008B610C /* Views */,
+				4FDEF21E2D8B53C4008B610C /* README.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -123,6 +129,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4FDEF21F2D8B53C8008B610C /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
