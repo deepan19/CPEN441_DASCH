@@ -10,10 +10,27 @@ import SwiftUI
 struct RoomDetailView: View {
     let room: Room
     @State private var selectedDate = Date()
-    @State private var selectedTimeSlots: Set<UUID> = []  // Track multiple selected slots by ID
+    @State private var selectedTimeSlots: Set<UUID> = []
     @State private var showingBookingConfirmation = false
     @State private var bookingSuccess = false
-    @State private var refreshToggle = false  // Add a toggle to force refresh
+    @State private var refreshToggle = false
+    
+    // Set min date to today and max date to 4 weeks from now
+    private var minDate: Date {
+        return Calendar.current.startOfDay(for: Date())
+    }
+    
+    private var maxDate: Date {
+        let calendar = Calendar.current
+        return calendar.date(byAdding: .day, value: 28, to: minDate)!
+    }
+    
+    // Initialize selectedDate to today when the view is created
+    init(room: Room) {
+        self.room = room
+        let today = Calendar.current.startOfDay(for: Date())
+        _selectedDate = State(initialValue: today)
+    }
     
     // Get time slots from DataStore with controlled availability
     var timeSlots: [TimeSlot] {
@@ -37,9 +54,8 @@ struct RoomDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Room image
+                // Room image section (unchanged)
                 ZStack(alignment: .bottomLeading) {
-                    // Room image with proper sizing
                     Image(room.imageName)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -51,7 +67,6 @@ struct RoomDetailView: View {
                                 .stroke(Color(.systemGray4), lineWidth: 1)
                         )
                     
-                    // Capacity badge
                     HStack(spacing: 4) {
                         Image(systemName: "person.2.fill")
                             .font(.caption)
@@ -68,7 +83,7 @@ struct RoomDetailView: View {
                 }
                 .padding(.horizontal)
                 
-                // Room details
+                // Room details section (unchanged)
                 VStack(alignment: .leading, spacing: 10) {
                     Text(room.name)
                         .font(.title)
@@ -78,7 +93,6 @@ struct RoomDetailView: View {
                         .font(.headline)
                         .foregroundColor(.secondary)
                     
-                    // Amenities
                     Text("Amenities")
                         .font(.headline)
                         .padding(.top, 5)
@@ -97,13 +111,22 @@ struct RoomDetailView: View {
                 }
                 .padding(.horizontal)
                 
-                // Date selection
+                // Date selection - WITH UPDATED DATE RANGE
                 VStack(alignment: .leading) {
-                    Text("Select Date")
-                        .font(.headline)
-                        .padding(.horizontal)
+                    HStack {
+                        Text("Select Date")
+                            .font(.headline)
+                        
+                        Spacer()
+                        
+                        // Add a helper text to show booking window
+                        Text("Next 4 weeks only")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal)
                     
-                    DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                    DatePicker("", selection: $selectedDate, in: minDate...maxDate, displayedComponents: .date)
                         .datePickerStyle(GraphicalDatePickerStyle())
                         .labelsHidden()
                         .padding(.horizontal)
@@ -113,7 +136,7 @@ struct RoomDetailView: View {
                         }
                 }
                 
-                // Time slots
+                // Time slots section (unchanged)
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Available Time Slots")
@@ -136,7 +159,6 @@ struct RoomDetailView: View {
                     } else {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], spacing: 10) {
                             ForEach(timeSlots) { slot in
-                                // Use the TimeSlotCell component
                                 TimeSlotCell(
                                     slot: slot,
                                     isSelected: selectedTimeSlots.contains(slot.id),
@@ -150,7 +172,7 @@ struct RoomDetailView: View {
                     }
                 }
                 
-                // Book button
+                // Book button (unchanged)
                 Button(action: {
                     showingBookingConfirmation = true
                 }) {
@@ -200,20 +222,17 @@ struct RoomDetailView: View {
         }
     }
     
-    // Handle time slot selection
+    // Methods remain unchanged
     private func handleTimeSlotSelection(_ slot: TimeSlot) {
         if !slot.isAvailable { return }
         
         if selectedTimeSlots.contains(slot.id) {
-            // If already selected, unselect it
             selectedTimeSlots.remove(slot.id)
         } else {
-            // If not selected, add it to the selection
             selectedTimeSlots.insert(slot.id)
         }
     }
     
-    // Format the booking time for display in confirmation
     private var formattedBookingTime: String {
         guard !selectedSlots.isEmpty else {
             return "No time selected"
@@ -226,7 +245,6 @@ struct RoomDetailView: View {
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
         
-        // Join all selected time slots
         let timeSlotTexts = selectedSlots.map {
             "\(timeFormatter.string(from: $0.startTime)) - \(timeFormatter.string(from: $0.endTime))"
         }.joined(separator: ", ")
