@@ -6,11 +6,18 @@
 //
 
 import Foundation
+import SwiftUI
 
 struct User {
     let id: String
     let name: String
     let email: String
+    var strikes: Int
+    var lastStrikeReduction: Date?
+    
+    var canBookRoom: Bool {
+        return strikes < 3
+    }
 }
 
 struct Room {
@@ -24,6 +31,11 @@ struct Room {
     
     var location: String {
         return "\(building), Floor \(floor)"
+    }
+    
+    // Generate a mock QR code ID for this room
+    var qrCodeId: String {
+        return "UBC-ROOM-\(id)-\(name.replacingOccurrences(of: " ", with: "-"))"
     }
 }
 
@@ -86,6 +98,10 @@ struct Booking: Identifiable {
     let date: Date
     let startTime: Date
     let endTime: Date
+    var checkedIn: Bool
+    var checkedInTime: Date?
+    var missedCheckIn: Bool = false
+    var cancelled: Bool = false
     
     var formattedDate: String {
         let formatter = DateFormatter()
@@ -98,10 +114,134 @@ struct Booking: Identifiable {
         formatter.dateFormat = "h:mm a"
         return "\(formatter.string(from: startTime)) - \(formatter.string(from: endTime))"
     }
+    
+    // Check if this booking is upcoming in the next 10 minutes or currently active
+    var isCheckInEligible: Bool {
+        if cancelled || missedCheckIn { return false }
+        
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Time until the booking starts
+        let startDiff = calendar.dateComponents([.minute], from: now, to: startTime)
+        
+        // Time since the booking started
+        let activeTime = calendar.dateComponents([.minute], from: startTime, to: now)
+        
+        // Eligible if within 10 mins before start or already started but not checked in and not missed
+        return (startDiff.minute ?? 100) <= 10 && (startDiff.minute ?? -100) >= 0 ||
+               (activeTime.minute ?? -1) >= 0 && now < endTime && !checkedIn && !missedCheckIn
+    }
+    
+    // Check if this booking is past the check-in window and the user hasn't checked in
+    var isMissedCheckIn: Bool {
+        if checkedIn || missedCheckIn || cancelled { return missedCheckIn }
+        
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Time since the booking started
+        let activeTime = calendar.dateComponents([.minute], from: startTime, to: now)
+        
+        // Missed check-in if more than 10 minutes since start and not checked in
+        return (activeTime.minute ?? -1) > 10
+    }
+    
+    // Check if this booking can be cancelled without penalty
+    var canCancelWithoutPenalty: Bool {
+        if cancelled || checkedIn || missedCheckIn { return false }
+        
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Time until the booking starts
+        let startDiff = calendar.dateComponents([.hour], from: now, to: startTime)
+        
+        // Can cancel without penalty if more than 3 hours before start time
+        return (startDiff.hour ?? 0) >= 3
+    }
+    
+    // Check if this booking can be cancelled with penalty (strike)
+    var canCancelWithPenalty: Bool {
+        if cancelled || checkedIn || missedCheckIn { return false }
+        
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Time until the booking starts
+        let startDiff = calendar.dateComponents([.hour], from: now, to: startTime)
+        let startMins = calendar.dateComponents([.minute], from: now, to: startTime)
+        
+        // Can cancel with penalty if less than 3 hours before start and hasn't started yet
+        return (startDiff.hour ?? 0) < 3 && (startMins.minute ?? 0) > 0
+    }
+    
+    // Check if this booking is cancellable at all
+    var isCancellable: Bool {
+        return !cancelled && !checkedIn && !missedCheckIn && Date() < startTime
+    }
+    
+    // Get status text for the booking
+    var statusText: String {
+        if cancelled {
+            return "Cancelled"
+        } else if checkedIn {
+            return "Checked in"
+        } else if missedCheckIn {
+            return "Missed"
+        } else if isCheckInEligible {
+            return "Check in"
+        } else if Date() > endTime {
+            return "Expired"
+        } else {
+            return "Upcoming"
+        }
+    }
+    
+    // Get status color for the booking
+    var statusColor: Color {
+        if cancelled {
+            return .gray
+        } else if checkedIn {
+            return .green
+        } else if missedCheckIn {
+            return .red
+        } else if isCheckInEligible {
+            return .blue
+        } else {
+            return .gray
+        }
+    }
+    
+    // Get status icon for the booking
+    var statusIcon: String {
+        if cancelled {
+            return "xmark.circle.fill"
+        } else if checkedIn {
+            return "checkmark.circle.fill"
+        } else if missedCheckIn {
+            return "exclamationmark.triangle.fill"
+        } else if isCheckInEligible {
+            return "qrcode.viewfinder"
+        } else if Date() > endTime {
+            return "clock.badge.xmark"
+        } else {
+            return "clock"
+        }
+    }
 }
 
 class DataStore {
     static let shared = DataStore()
+    
+    // Hold a current user
+    var currentUser: User = User(
+        id: "student1",
+        name: "Student",
+        email: "student@ubc.ca",
+        strikes: 0,
+        lastStrikeReduction: nil
+    )
     
     let rooms: [Room] = [
         Room(id: "1", name: "MCLD 1011", building: "MacLeod", floor: 1, capacity: 4,
@@ -152,18 +292,168 @@ class DataStore {
     }
     
     func addBooking(roomId: String, date: Date, timeSlot: TimeSlot) {
-            // Find the room name
-            let roomName = rooms.first(where: { $0.id == roomId })?.name ?? "Unknown Room"
-            
-            // Add the booking
-            let newBooking = Booking(
-                roomId: roomId,
-                roomName: roomName,
-                date: date,
-                startTime: timeSlot.startTime,
-                endTime: timeSlot.endTime
-            )
-            
-            bookings.append(newBooking)
+        // Find the room name
+        let roomName = rooms.first(where: { $0.id == roomId })?.name ?? "Unknown Room"
+        
+        // Add the booking
+        let newBooking = Booking(
+            roomId: roomId,
+            roomName: roomName,
+            date: date,
+            startTime: timeSlot.startTime,
+            endTime: timeSlot.endTime,
+            checkedIn: false,
+            checkedInTime: nil
+        )
+        
+        bookings.append(newBooking)
+    }
+    
+    // Mark a booking as checked in
+    func checkInBooking(bookingId: UUID) -> Bool {
+        guard let index = bookings.firstIndex(where: { $0.id == bookingId }) else {
+            return false
         }
+        
+        // Verify this booking is eligible for check-in
+        if bookings[index].isCheckInEligible {
+            bookings[index].checkedIn = true
+            bookings[index].checkedInTime = Date()
+            return true
+        }
+        
+        return false
+    }
+    
+    // Add a strike to the current user
+    func addStrike() {
+        if currentUser.strikes < 5 {
+            currentUser.strikes += 1
+        }
+    }
+    
+    // Reduce strikes (mock the daily reduction)
+    func reduceStrikes() {
+        let now = Date()
+        
+        // For the demo/prototype, we'll always reduce strikes when requested
+        // In a real app, we would check if reduction already happened today
+        
+        // Reduce one strike if we have any
+        if currentUser.strikes > 0 {
+            currentUser.strikes -= 1
+            currentUser.lastStrikeReduction = now
+        }
+    }
+    
+    // Process missed check-ins and assign strikes
+    func processMissedCheckIns() {
+        for index in bookings.indices {
+            // If this booking has already been processed for a strike, skip it
+            if bookings[index].isMissedCheckIn && !bookings[index].missedCheckIn && !bookings[index].checkedIn {
+                // Mark as missed check-in instead of checked in
+                bookings[index].missedCheckIn = true
+                
+                // Don't mark as checked in
+                bookings[index].checkedIn = false
+                
+                // Add a strike to the user
+                addStrike()
+            }
+        }
+    }
+
+    // Cancel a booking by ID
+    func cancelBooking(bookingId: UUID) -> (success: Bool, penaltyApplied: Bool) {
+        guard let index = bookings.firstIndex(where: { $0.id == bookingId }) else {
+            return (false, false)
+        }
+        
+        let booking = bookings[index]
+        
+        // Can't cancel if already checked in, missed, or cancelled
+        if booking.checkedIn || booking.missedCheckIn || booking.cancelled {
+            return (false, false)
+        }
+        
+        // Can't cancel if the booking has already started
+        if Date() > booking.startTime {
+            return (false, false)
+        }
+        
+        // Check if cancellation will incur a penalty (less than 3 hours before start)
+        let penaltyApplied = booking.canCancelWithPenalty
+        
+        // Apply penalty if needed
+        if penaltyApplied {
+            addStrike()
+        }
+        
+        // Mark the booking as cancelled
+        bookings[index].cancelled = true
+        
+        return (true, penaltyApplied)
+    }
+
+    // Simulate cancellation functions for testing
+    func simulateCancellationScenarios() {
+        // Get the first room for our test bookings
+        guard let firstRoom = rooms.first else { return }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // 1. Booking that can be cancelled without penalty (4 hours from now)
+        let noPenaltyStartTime = calendar.date(byAdding: .hour, value: 4, to: now)!
+        let noPenaltyEndTime = calendar.date(byAdding: .hour, value: 5, to: noPenaltyStartTime)!
+        
+        let noPenaltyBooking = Booking(
+            roomId: firstRoom.id,
+            roomName: firstRoom.name,
+            date: noPenaltyStartTime,
+            startTime: noPenaltyStartTime,
+            endTime: noPenaltyEndTime,
+            checkedIn: false,
+            checkedInTime: nil,
+            missedCheckIn: false,
+            cancelled: false
+        )
+        
+        // 2. Booking that can be cancelled with penalty (2 hours from now)
+        let penaltyStartTime = calendar.date(byAdding: .hour, value: 2, to: now)!
+        let penaltyEndTime = calendar.date(byAdding: .hour, value: 1, to: penaltyStartTime)!
+        
+        let penaltyBooking = Booking(
+            roomId: firstRoom.id,
+            roomName: firstRoom.name,
+            date: penaltyStartTime,
+            startTime: penaltyStartTime,
+            endTime: penaltyEndTime,
+            checkedIn: false,
+            checkedInTime: nil,
+            missedCheckIn: false,
+            cancelled: false
+        )
+        
+        // 3. Booking that has already started (can't be cancelled)
+        let startedStartTime = calendar.date(byAdding: .minute, value: -15, to: now)!
+        let startedEndTime = calendar.date(byAdding: .hour, value: 1, to: startedStartTime)!
+        
+        let startedBooking = Booking(
+            roomId: firstRoom.id,
+            roomName: firstRoom.name,
+            date: startedStartTime,
+            startTime: startedStartTime,
+            endTime: startedEndTime,
+            checkedIn: false,
+            checkedInTime: nil,
+            missedCheckIn: false,
+            cancelled: false
+        )
+        
+        // Add all test bookings
+        bookings.append(noPenaltyBooking)
+        bookings.append(penaltyBooking)
+        bookings.append(startedBooking)
+    }
 }

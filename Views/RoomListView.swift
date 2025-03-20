@@ -11,7 +11,6 @@ struct RoomListView: View {
     @State private var searchText: String = ""
     @State private var showingFilterSheet: Bool = false
     @State private var selectedAmenities: Set<Amenity> = []
-    @State private var showingMyBookings: Bool = false
     
     // Get rooms from our data store
     let rooms = DataStore.shared.rooms
@@ -148,19 +147,8 @@ struct RoomListView: View {
             .listStyle(InsetGroupedListStyle())
         }
         .navigationTitle("Study Rooms")
-        .navigationBarItems(
-            trailing: Button(action: {
-                showingMyBookings = true
-            }) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 22))
-            }
-        )
         .sheet(isPresented: $showingFilterSheet) {
             FilterView(selectedAmenities: $selectedAmenities)
-        }
-        .sheet(isPresented: $showingMyBookings) {
-            MyBookingsView()
         }
     }
 }

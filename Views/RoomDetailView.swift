@@ -12,8 +12,12 @@ struct RoomDetailView: View {
     @State private var selectedDate = Date()
     @State private var selectedTimeSlots: Set<UUID> = []
     @State private var showingBookingConfirmation = false
+    @State private var showingStrikeWarning = false
     @State private var bookingSuccess = false
     @State private var refreshToggle = false
+    
+    // Add state to track user's booking eligibility
+    @State private var userCanBook: Bool = true
     
     // Set min date to today and max date to 4 weeks from now
     private var minDate: Date {
@@ -30,6 +34,7 @@ struct RoomDetailView: View {
         self.room = room
         let today = Calendar.current.startOfDay(for: Date())
         _selectedDate = State(initialValue: today)
+        _userCanBook = State(initialValue: DataStore.shared.currentUser.canBookRoom)
     }
     
     // Get time slots from DataStore with controlled availability
@@ -46,7 +51,7 @@ struct RoomDetailView: View {
             .sorted { $0.startTime < $1.startTime }
     }
     
-    // Modified validation - simply check if any slots are selected
+    // Modified validation - check if any slots are selected
     var hasValidSelection: Bool {
         return !selectedSlots.isEmpty
     }
@@ -54,7 +59,7 @@ struct RoomDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Room image section (unchanged)
+                // Room image section
                 ZStack(alignment: .bottomLeading) {
                     Image(room.imageName)
                         .resizable()
@@ -83,8 +88,9 @@ struct RoomDetailView: View {
                 }
                 .padding(.horizontal)
                 
-                // Room details section (unchanged)
+                // Room details section
                 VStack(alignment: .leading, spacing: 10) {
+                    // Room name and details without QR code button
                     Text(room.name)
                         .font(.title)
                         .fontWeight(.bold)
@@ -98,7 +104,7 @@ struct RoomDetailView: View {
                         .padding(.top, 5)
                     
                     HStack(spacing: 10) {
-                        ForEach(room.amenities) { amenity in
+                        ForEach(room.amenities, id: \.self) { amenity in
                             HStack {
                                 Image(systemName: amenity.iconName)
                                 Text(amenity.rawValue)
@@ -111,7 +117,23 @@ struct RoomDetailView: View {
                 }
                 .padding(.horizontal)
                 
-                // Date selection - WITH UPDATED DATE RANGE
+                // Strike warning if needed
+                if !userCanBook {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                        
+                        Text("You have \(DataStore.shared.currentUser.strikes) strikes and cannot make new bookings.")
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                    }
+                    .padding()
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+                }
+                
+                // Date selection
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Select Date")
@@ -136,7 +158,7 @@ struct RoomDetailView: View {
                         }
                 }
                 
-                // Time slots section (unchanged)
+                // Time slots section
                 VStack(alignment: .leading) {
                     HStack {
                         Text("Available Time Slots")
@@ -158,7 +180,7 @@ struct RoomDetailView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
                     } else {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], spacing: 10) {
-                            ForEach(timeSlots) { slot in
+                            ForEach(timeSlots, id: \.id) { slot in
                                 TimeSlotCell(
                                     slot: slot,
                                     isSelected: selectedTimeSlots.contains(slot.id),
@@ -172,16 +194,20 @@ struct RoomDetailView: View {
                     }
                 }
                 
-                // Book button (unchanged)
+                // Book button
                 Button(action: {
-                    showingBookingConfirmation = true
+                    if !userCanBook {
+                        showingStrikeWarning = true
+                    } else {
+                        showingBookingConfirmation = true
+                    }
                 }) {
                     Text("Book Room")
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(hasValidSelection ? Color.blue : Color.gray)
+                        .background(hasValidSelection ? (userCanBook ? Color.blue : Color.gray) : Color.gray)
                         .cornerRadius(8)
                 }
                 .disabled(!hasValidSelection)
@@ -193,7 +219,7 @@ struct RoomDetailView: View {
         .alert("Confirm Booking", isPresented: $showingBookingConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Book") {
-                if hasValidSelection {
+                if hasValidSelection && userCanBook {
                     // Create separate bookings for each selected time slot
                     for slot in selectedSlots {
                         DataStore.shared.addBooking(
@@ -215,10 +241,22 @@ struct RoomDetailView: View {
         } message: {
             Text("Book \(room.name) for \(formattedBookingTime)")
         }
+        .alert("Booking Blocked", isPresented: $showingStrikeWarning) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("You have \(DataStore.shared.currentUser.strikes) strikes and cannot make new bookings until your strikes are below 3.")
+        }
         .alert("Booking Confirmed", isPresented: $bookingSuccess) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Your room has been booked successfully.")
+            Text("Your room has been booked successfully. Remember to check in with the QR code within 10 minutes of your booking start time.")
+        }
+        .onAppear {
+            // Process any missed check-ins
+            DataStore.shared.processMissedCheckIns()
+            
+            // IMPORTANT: Update the userCanBook state when view appears
+            userCanBook = DataStore.shared.currentUser.canBookRoom
         }
     }
     
