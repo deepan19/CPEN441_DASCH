@@ -43,6 +43,7 @@ enum Amenity: String, CaseIterable, Identifiable {
     case whiteboard = "Whiteboard"
     case projector = "Projector"
     case charger = "Power Outlets"
+    case wheelchair = "Wheelchair Access"
     
     var id: String { self.rawValue }
     
@@ -51,6 +52,7 @@ enum Amenity: String, CaseIterable, Identifiable {
         case .whiteboard: return "square.and.pencil"
         case .projector: return "tv"
         case .charger: return "bolt.fill"
+        case .wheelchair: return "figure.roll"
         }
     }
 }
@@ -244,19 +246,19 @@ class DataStore {
     )
     
     let rooms: [Room] = [
-        Room(id: "1", name: "MCLD 1011", building: "MacLeod", floor: 1, capacity: 4,
-             amenities: [.whiteboard, .charger], imageName: "mcld_1011"),
-        Room(id: "2", name: "SBME 393", building: "SBME", floor: 3, capacity: 8,
-             amenities: [.whiteboard, .projector], imageName: "sbme_393"),
-        Room(id: "3", name: "ESC 2021", building: "ESC", floor: 2, capacity: 20,
-             amenities: [.projector, .charger], imageName: "esc_2021"),
-        Room(id: "4", name: "MCLD 2011", building: "MacLeod", floor: 2, capacity: 2,
-             amenities: [.charger], imageName: "mcld_2011"),
-        Room(id: "5", name: "SBME 493", building: "SBME", floor: 4, capacity: 6,
-             amenities: [.whiteboard, .projector, .charger], imageName: "sbme_493"),
-        Room(id: "6", name: "CEME 202", building: "CEME", floor: 2, capacity: 12,
-             amenities: [.whiteboard, .projector], imageName: "ceme_202")
-    ]
+            Room(id: "1", name: "MCLD 1011", building: "MacLeod", floor: 1, capacity: 4,
+                 amenities: [.whiteboard, .charger, .wheelchair], imageName: "mcld_1011"),
+            Room(id: "2", name: "SBME 393", building: "SBME", floor: 3, capacity: 8,
+                 amenities: [.whiteboard, .projector], imageName: "sbme_393"),
+            Room(id: "3", name: "ESC 2021", building: "ESC", floor: 2, capacity: 20,
+                 amenities: [.projector, .charger, .wheelchair], imageName: "esc_2021"),
+            Room(id: "4", name: "MCLD 2011", building: "MacLeod", floor: 2, capacity: 2,
+                 amenities: [.charger], imageName: "mcld_2011"),
+            Room(id: "5", name: "SBME 493", building: "SBME", floor: 4, capacity: 6,
+                 amenities: [.whiteboard, .projector, .charger], imageName: "sbme_493"),
+            Room(id: "6", name: "CEME 202", building: "CEME", floor: 2, capacity: 12,
+                 amenities: [.whiteboard, .projector, .wheelchair], imageName: "ceme_202")
+        ]
     
     var bookings: [Booking] = []
     
